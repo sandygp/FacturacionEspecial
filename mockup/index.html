@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prototipo English Compass</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: barra de prototipo arriba; pantallas del alumno en un marco de móvil centrado, pantallas del profesor a ancho completo. */
+:root {
+  --bg: #e9ede8; --screen: #f2f4f1; --surface: #ffffff; --surface-2: #e8ece6; --ink: #18212b; --muted: #56616c; --line: #d3d9d1;
+  --accent: #0d6b66; --accent-ink: #ffffff; --accent-soft: #d6ebe8; --gold: #b7841a; --gold-soft: #f7ecd2; --gold-ink: #6b4e0c;
+  --band-a: #4f8a3c; --band-b: #2f6db0; --band-c: #7a4fa8; --good: #2e7d4f; --good-soft: #dcefe3; --bad: #b23a3a; --bad-soft: #f6dddd;
+  --frame: #18212b;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1014; --screen: #10161b; --surface: #182128; --surface-2: #1f2a32; --ink: #e5eaee; --muted: #9aa6b0; --line: #2b3741;
+    --accent: #4fb8ae; --accent-ink: #0b1714; --accent-soft: #173a38; --gold: #e2b24a; --gold-soft: #3a2f16; --gold-ink: #f0d08a;
+    --band-a: #7cbf66; --band-b: #6ea7e6; --band-c: #b18ee0; --good: #6fcf97; --good-soft: #17352a; --bad: #ef7d7d; --bad-soft: #3d1f22;
+    --frame: #2b3741; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1014; --screen: #10161b; --surface: #182128; --surface-2: #1f2a32; --ink: #e5eaee; --muted: #9aa6b0; --line: #2b3741;
+  --accent: #4fb8ae; --accent-ink: #0b1714; --accent-soft: #173a38; --gold: #e2b24a; --gold-soft: #3a2f16; --gold-ink: #f0d08a;
+  --band-a: #7cbf66; --band-b: #6ea7e6; --band-c: #b18ee0; --good: #6fcf97; --good-soft: #17352a; --bad: #ef7d7d; --bad-soft: #3d1f22;
+  --frame: #2b3741; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; line-height: 1.15; text-wrap: balance; }
+p { margin: 0; }
+a { color: var(--accent); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+/* Barra del prototipo */
+.proto { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--ink); color: var(--screen); }
+.proto-in { max-width: 1240px; margin: 0 auto; padding: 8px 16px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.proto b { font-family: var(--font-display); font-size: 15px; }
+.proto .seg { display: inline-flex; background: rgba(255,255,255,0.12); border-radius: 999px; padding: 3px; }
+.proto .seg button { border: 0; background: transparent; color: inherit; padding: 6px 14px; border-radius: 999px; font-weight: 700; font-size: 13px; cursor: pointer; }
+.proto .seg button[aria-pressed="true"] { background: var(--screen); color: var(--ink); }
+.proto select { background: rgba(255,255,255,0.12); color: inherit; border: 0; border-radius: 8px; padding: 6px 8px; font-size: 13px; max-width: 100%; }
+.proto select option { color: #18212b; background: #ffffff; }
+.proto .hint { font-size: 12px; opacity: 0.75; margin-left: auto; }
+
+.stage { padding-inline: 16px; padding-block: 24px 48px; display: flex; justify-content: center; }
+.phone { width: 100%; max-width: 390px; min-height: 780px; background: var(--screen); border: 10px solid var(--frame); border-radius: 36px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.18); }
+.desk { width: 100%; max-width: 1240px; background: var(--screen); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; min-height: 760px; }
+@media (max-width: 440px) { .phone { border-width: 0; border-radius: 0; box-shadow: none; } .stage { padding-inline: 0; padding-block: 0; } }
+
+/* Piezas comunes */
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 16px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.bar .t { font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+.brand { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 700; font-size: 17px; }
+.content { flex: 1; padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; }
+.nav { display: flex; gap: 2px; padding: 6px 6px 10px; background: var(--surface); border-top: 1px solid var(--line); }
+.nav button { flex: 1; min-height: 44px; border: 0; background: transparent; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; }
+.nav button[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.eyebrow { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; color: var(--muted); }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.h1 { font-size: 28px; font-weight: 700; }
+.h2 { font-size: 19px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 46px; padding: 0 18px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 700; cursor: pointer; text-decoration: none; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.sm { min-height: 36px; padding: 0 12px; font-size: 13px; }
+.btn.link { border: 0; background: transparent; color: var(--accent); padding: 0 4px; min-height: 36px; }
+.btn.dash { border-style: dashed; border-color: var(--accent); color: var(--accent); background: transparent; min-height: 40px; font-size: 14px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.full { width: 100%; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.between { justify-content: space-between; }
+.lvl { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; font-family: var(--font-mono); font-weight: 700; font-size: 12px; padding: 1px 5px; border-radius: 6px; border: 1.5px solid currentColor; }
+.lvl.a { color: var(--band-a); } .lvl.b { color: var(--band-b); } .lvl.c { color: var(--band-c); }
+.lvl.big { font-size: 24px; padding: 2px 10px; border-width: 2.5px; border-radius: 8px; }
+.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: 13px; min-width: 0; }
+.field input, .field select, .field textarea { min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-weight: 400; font-size: 15px; width: 100%; }
+.field textarea { padding: 10px 12px; min-height: 80px; resize: vertical; }
+.toggle { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 3px; background: var(--surface-2); border-radius: 10px; }
+.toggle button { min-height: 40px; border: 0; border-radius: 8px; background: transparent; font-weight: 700; font-size: 14px; color: var(--muted); cursor: pointer; }
+.toggle button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
+.opt { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 46px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-size: 15px; text-align: left; cursor: pointer; }
+.opt[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.opt.ok { border-color: var(--good); background: var(--good-soft); }
+.opt.ko { border-color: var(--bad); background: var(--bad-soft); }
+.fb { padding: 10px 12px; border-radius: 8px; font-size: 14px; }
+.fb.ok { background: var(--good-soft); } .fb.ko { background: var(--bad-soft); } .fb.wait { background: var(--gold-soft); }
+.progress { height: 6px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+.progress > span { display: block; height: 100%; background: var(--accent); transition: width 0.3s; }
+.audio { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--surface-2); border-radius: 8px; }
+.play { width: 44px; height: 44px; flex: none; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.wave { display: inline-flex; gap: 3px; align-items: center; height: 22px; }
+.wave i { width: 3px; height: 8px; background: var(--accent); border-radius: 2px; }
+.wave.on i { animation: wv 0.9s ease-in-out infinite; }
+.wave i:nth-child(2) { animation-delay: 0.15s; } .wave i:nth-child(3) { animation-delay: 0.3s; } .wave i:nth-child(4) { animation-delay: 0.45s; }
+@keyframes wv { 50% { height: 22px; } }
+.ladder { display: flex; flex-direction: column; gap: 8px; }
+.lr { display: grid; grid-template-columns: 100px 1fr 40px; gap: 8px; align-items: center; font-size: 13px; }
+.segs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; }
+.segs span { height: 12px; border-radius: 3px; background: var(--surface-2); }
+.segs .a { background: var(--band-a); } .segs .b { background: var(--band-b); } .segs .c { background: var(--band-c); }
+.segs .t { box-shadow: inset 0 0 0 2px var(--gold); }
+.scale { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); text-align: center; font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+.bars { display: flex; flex-direction: column; gap: 8px; }
+.br { display: grid; grid-template-columns: 110px 1fr 62px; gap: 8px; align-items: center; font-size: 13px; }
+.track { height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+.track span { display: block; height: 100%; background: var(--accent); }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.metric { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; }
+.metric b { font-family: var(--font-mono); font-size: 22px; font-variant-numeric: tabular-nums; }
+.metric span { font-size: 12px; color: var(--muted); }
+.task { display: grid; grid-template-columns: 22px 1fr; gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); }
+.task:first-of-type { border-top: 0; }
+.task input { width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--accent); }
+.task.done .tb { opacity: 0.55; } .task.done label { text-decoration: line-through; }
+.tb { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.tag { font-size: 12px; font-weight: 700; color: var(--muted); }
+.class-task { box-shadow: inset 4px 0 0 var(--gold); }
+.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.day { display: flex; flex-direction: column; gap: 4px; align-items: center; padding: 6px 2px; border-radius: 8px; background: var(--surface-2); font-size: 11px; }
+.day.today { box-shadow: inset 0 0 0 2px var(--accent); }
+.day.rest { opacity: 0.55; }
+.dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
+.tl { display: grid; grid-template-columns: 76px 1fr; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; }
+.tl:first-of-type { border-top: 0; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-weight: 700; font-size: 13px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--screen); border-color: var(--ink); }
+.fix { background: var(--bad-soft); text-decoration: line-through; text-decoration-color: var(--bad); border-radius: 3px; padding: 0 2px; }
+.okw { background: var(--good-soft); border-radius: 3px; padding: 0 2px; }
+.rec { width: 72px; height: 72px; border-radius: 999px; border: 0; background: var(--bad); color: #ffffff; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.rec.on { animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.06); } }
+.timer { font-family: var(--font-mono); font-size: 32px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Profesor */
+.dhead { background: var(--surface); border-bottom: 1px solid var(--line); }
+.dhead-in { padding: 12px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
+.dnav { display: flex; gap: 4px; flex-wrap: wrap; margin-left: auto; }
+.dnav button { padding: 8px 14px; border-radius: 999px; border: 0; background: transparent; color: var(--muted); font-weight: 700; font-size: 14px; cursor: pointer; }
+.dnav button[aria-current="page"] { background: var(--accent); color: var(--accent-ink); }
+.dmain { padding: 28px 24px 40px; display: flex; flex-direction: column; gap: 20px; }
+.cols { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.cols > .wide { flex: 999 1 540px; min-width: 0; }
+.cols > .narrow { flex: 1 1 300px; min-width: 0; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; text-align: left; padding: 8px 10px; white-space: nowrap; }
+td { padding: 10px; border-top: 1px solid var(--line); white-space: nowrap; }
+.pill { display: inline-flex; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.pill.ok { background: var(--good-soft); color: var(--good); } .pill.warn { background: var(--gold-soft); color: var(--gold-ink); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); } .pill.up { background: var(--accent-soft); color: var(--accent); }
+.mini { width: 90px; height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 6px; }
+.mini span { display: block; height: 100%; }
+.rv { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); }
+.rv:first-of-type { border-top: 0; }
+.crit { display: grid; grid-template-columns: 130px 60px 1fr; gap: 12px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.crit select { min-height: 40px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-family: var(--font-mono); font-weight: 700; }
+.crit select.changed { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+.qblock { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; }
+.optgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; }
+.optgrid label { display: flex; gap: 8px; align-items: center; min-height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; }
+.optgrid input[type="radio"] { accent-color: var(--good); }
+.optgrid input[type="text"] { border: 0; background: transparent; min-width: 0; flex: 1; font-size: 14px; }
+.lib { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.lib:first-of-type { border-top: 0; }
+
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--screen); padding: 10px 18px; border-radius: 999px; font-weight: 700; font-size: 14px; z-index: 30; max-width: calc(100% - 32px); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="proto" role="region" aria-label="Controles del prototipo">
+  <div class="proto-in">
+    <b>Prototipo</b>
+    <div class="seg" role="group" aria-label="Vista">
+      <button type="button" data-role="student" aria-pressed="true">Alumno</button>
+      <button type="button" data-role="teacher" aria-pressed="false">Profesor</button>
+    </div>
+    <label class="small"><span class="sr" hidden>Ir a pantalla</span><select id="jump" aria-label="Ir a una pantalla"></select></label>
+    <button type="button" class="btn sm" id="reset" style="min-height:32px;background:transparent;color:inherit;border-color:rgba(255,255,255,0.3)">Reiniciar</button>
+    <span class="hint">Datos de ejemplo. Pulsa botones y opciones para navegar.</span>
+  </div>
+</div>
+<div class="stage" id="stage"></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+  const LOGO = '<svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="var(--accent)" stroke-width="2.5"/><path d="M16 6 L19.5 16 L16 26 L12.5 16 Z" fill="var(--accent)"/><path d="M16 6 L19.5 16 L12.5 16 Z" fill="var(--gold)"/></svg>';
+  const PLAY = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 2 L12 7 L3 12 Z" fill="currentColor"/></svg>';
+  const L = (code) => `<span class="lvl ${code[0].toLowerCase()}">${code}</span>`;
+  const LB = (code) => `<span class="lvl big ${code[0].toLowerCase()}">${code}</span>`;
+
+  const SCREENS = {
+    login: { role: 'student', name: '1 · Entrar' },
+    activar: { role: 'student', name: '2 · Activar cuenta' },
+    bienvenida: { role: 'student', name: '3 · Bienvenida' },
+    diagnostico: { role: 'student', name: '4 · Diagnóstico', tab: 'diagnostico' },
+    resultados: { role: 'student', name: '5 · Resultados', tab: 'diagnostico' },
+    plan: { role: 'student', name: '6 · Mi plan', tab: 'plan' },
+    hoy: { role: 'student', name: '7 · Hoy', tab: 'hoy' },
+    practica: { role: 'student', name: '8 · Práctica', tab: 'practica' },
+    oral: { role: 'student', name: '9 · Oral con IA', tab: 'practica' },
+    progreso: { role: 'student', name: '10 · Progreso', tab: 'progreso' },
+    profesor: { role: 'teacher', name: '11 · Panel del profesor', tab: 'grupos' },
+    revision: { role: 'teacher', name: '12 · Revisión', tab: 'revisiones' },
+    tarea: { role: 'teacher', name: '13 · Asignar tarea', tab: 'tareas' }
+  };
+
+  const initial = () => ({
+    screen: 'login', loginRole: 'student', diagQ: null, diagStep: 0, planMode: 'fecha',
+    tasks: [true, false, false], quiz: 0, quizAns: null, quizOk: 0,
+    rec: 'idle', recSecs: 0, pending: 4, review: 0, changed: {}, taskMode: 'crear', questions: 1
+  });
+  let S = initial();
+  let recTimer = null;
+
+  const stage = document.getElementById('stage');
+  const jump = document.getElementById('jump');
+  jump.innerHTML = Object.entries(SCREENS).map(([k, v]) => `<option value="${k}">${v.name}${v.role === 'teacher' ? ' (profesor)' : ''}</option>`).join('');
+
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toast.h); toast.h = setTimeout(() => { t.hidden = true; }, 2200);
+  }
+  function go(screen) { S.screen = screen; clearInterval(recTimer); render(); window.scrollTo(0, 0); }
+
+  const nav = (tab) => `<nav class="nav" aria-label="Secciones">
+    ${[['hoy', 'Inicio'], ['diagnostico', 'Diagnóstico'], ['plan', 'Plan'], ['practica', 'Práctica'], ['progreso', 'Progreso']]
+      .map(([k, l]) => `<button type="button" data-go="${k}" ${k === tab ? 'aria-current="page"' : ''}>${l}</button>`).join('')}</nav>`;
+  const phone = (inner) => `<div class="phone">${inner}</div>`;
+
+  /* ---------- Alumno ---------- */
+  const V = {};
+  V.login = () => phone(`<main class="content" style="padding:56px 24px 24px;gap:24px">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
+      <svg width="56" height="56" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="var(--accent)" stroke-width="2.5"/><path d="M16 6 L19.5 16 L16 26 L12.5 16 Z" fill="var(--accent)"/><path d="M16 6 L19.5 16 L12.5 16 Z" fill="var(--gold)"/></svg>
+      <h1 class="h1">English Compass</h1><span class="small muted">[NOMBRE DE LA ACADEMIA]</span></div>
+    <form class="panel" data-form="login" style="gap:14px;padding:20px">
+      <div class="toggle" role="group" aria-label="Tipo de cuenta">
+        <button type="button" data-act="login-role" data-v="student" aria-pressed="${S.loginRole === 'student'}">Alumno</button>
+        <button type="button" data-act="login-role" data-v="teacher" aria-pressed="${S.loginRole === 'teacher'}">Profesor</button></div>
+      <label class="field" for="em">Correo electrónico<input id="em" type="email" value="${S.loginRole === 'student' ? 'lucia.m@correo.com' : 'profesor@academia.com'}" autocomplete="username"></label>
+      <label class="field" for="pw">Contraseña<input id="pw" type="password" value="contraseña" autocomplete="current-password"></label>
+      <button class="btn primary full" type="submit">Entrar</button>
+      <button class="btn link" type="button" data-toast="Te hemos enviado un enlace para crear una contraseña nueva.">¿Has olvidado la contraseña?</button>
+    </form>
+    <div style="text-align:center" class="small muted">¿Te ha invitado tu academia?<br><button class="btn link" type="button" data-go="activar">Activar mi cuenta con el código</button></div>
+  </main>`);
+
+  V.activar = () => phone(`<header class="bar"><button class="btn link" data-go="login">Volver</button><span class="t">Activar cuenta</span><span style="width:44px"></span></header>
+    <main class="content"><div style="display:flex;flex-direction:column;gap:6px"><h1 class="h1" style="font-size:26px">Bienvenida al grupo B1</h1>
+      <p class="muted">Tu profesor te ha invitado. Comprueba tus datos y elige una contraseña.</p></div>
+    <form class="panel" data-form="activar" style="gap:14px;padding:20px">
+      <label class="field" for="code">Código de invitación<input id="code" class="mono" type="text" value="B1-MJ-7K4Q"></label>
+      <div class="fb" style="background:var(--accent-soft)"><b>Grupo B1 · martes y jueves 18:00</b><br>Profesor: [PROFESOR]</div>
+      <label class="field" for="nm">Nombre<input id="nm" type="text" value="Lucía Martín" autocomplete="name"></label>
+      <label class="field" for="em2">Correo electrónico<input id="em2" type="email" value="lucia.m@correo.com" autocomplete="email"></label>
+      <label class="field" for="pw2">Contraseña nueva<input id="pw2" type="password" value="contraseña123" autocomplete="new-password"></label>
+      <span class="small muted">Al menos 8 caracteres e incluye un número.</span>
+      <button class="btn primary full" type="submit">Crear mi cuenta</button></form></main>`);
+
+  V.bienvenida = () => phone(`<header class="bar"><span class="brand">${LOGO}English Compass</span><span class="small muted" style="font-weight:700">[ACADEMIA]</span></header>
+    <main class="content" style="gap:20px">
+      <div style="display:flex;flex-direction:column;gap:10px"><span class="eyebrow">Hola, Lucía</span>
+      <h1 class="h1">¿Qué nivel de inglés tienes hoy y qué necesitas para subir al siguiente?</h1>
+      <p class="muted">Mide seis destrezas, recibe un plan semanal y practica entre clase y clase. Tu profesor ve tu avance y revisa tus evaluaciones.</p></div>
+      <div style="display:flex;flex-direction:column;gap:8px"><button class="btn primary" data-go="diagnostico">Empezar diagnóstico · 20 min</button><button class="btn" data-go="hoy">Hacerlo más tarde</button></div>
+      <section class="panel"><h2 class="h2">Cómo funciona</h2>
+        <div style="display:grid;grid-template-columns:22px 1fr;gap:10px 8px;font-size:14px">
+          <span class="mono" style="color:var(--accent);font-weight:700">1</span><span><b>Diagnóstico adaptativo.</b> Sube o baja de nivel según aciertes.</span>
+          <span class="mono" style="color:var(--accent);font-weight:700">2</span><span><b>Plan al siguiente nivel.</b> Por tiempo diario o por fecha objetivo.</span>
+          <span class="mono" style="color:var(--accent);font-weight:700">3</span><span><b>Práctica con IA y profesor.</b> La IA corrige; tu profesor valida.</span></div></section>
+    </main>`);
+
+  const DIAG = [
+    { title: 'Station announcement', q: 'What has changed about the train to Manchester?', opts: ['Its destination', 'Its platform and departure time', 'Its price', 'It has been cancelled'] },
+    { title: 'Station announcement', q: 'Why has this happened?', opts: ['Bad weather', 'Engineering works', 'A strike', 'An accident'] },
+    { title: 'Station announcement', q: 'What should passengers with connections do?', opts: ['Take a bus', 'Wait on platform four', 'Speak to staff at the information desk', 'Buy a new ticket'] }
+  ];
+  V.diagnostico = () => {
+    const d = DIAG[S.diagStep];
+    return phone(`<header class="bar"><button class="btn link" data-go="bienvenida">Salir</button><span class="t">Diagnóstico</span><span class="mono small muted">2/6</span></header>
+    <main class="content"><div style="display:flex;flex-direction:column;gap:8px"><span class="eyebrow">Parte 2 de 6 · Comprensión auditiva</span>
+      <div class="progress"><span style="width:${18 + S.diagStep * 4}%"></span></div></div>
+    <section class="panel"><h2 class="h2" lang="en">${d.title}</h2>
+      <div class="audio"><button class="play" data-act="listen" aria-label="Escuchar">${PLAY}</button><span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="small muted" style="margin-left:auto">Puedes escucharlo 2 veces</span></div>
+      <p style="font-weight:700" lang="en">${S.diagStep + 1}. ${d.q}</p>
+      <div style="display:flex;flex-direction:column;gap:8px" lang="en">${d.opts.map((o, i) => `<button type="button" class="opt" data-act="diag-pick" data-v="${i}" aria-pressed="${S.diagQ === i}">${o}</button>`).join('')}</div>
+      <p class="small muted">Si aciertas 2 de 3, el siguiente audio será de nivel B2.</p></section>
+    <button class="btn primary" data-act="diag-next" ${S.diagQ === null ? 'disabled' : ''}>${S.diagStep < 2 ? 'Siguiente pregunta' : 'Ver resultados'}</button></main>`);
+  };
+
+  const LADDER = [['Lectura', 3, 'B2'], ['Escucha', 2, 'B1'], ['Gramática', 1, 'A2'], ['Vocabulario', 3, 'B2'], ['Escritura', 2, 'B1'], ['Expresión oral', 1, 'A2']];
+  const ladder = () => `<div class="ladder"><div class="lr"><span></span><div class="scale"><span>A1</span><span>A2</span><span>B1</span><span>B2</span><span>C1</span><span>C2</span></div><span></span></div>
+    ${LADDER.map(([n, lv, code]) => `<div class="lr"><b>${n}</b><div class="segs">${[0, 1, 2, 3, 4, 5].map(i => `<span class="${i <= lv ? (i < 2 ? 'a' : i < 4 ? 'b' : 'c') : ''}${i === 3 && lv < 3 ? ' t' : ''}"></span>`).join('')}</div>${L(code)}</div>`).join('')}
+    <span class="small muted">Recuadro dorado: nivel objetivo de cada destreza.</span></div>`;
+
+  V.resultados = () => phone(`<header class="bar"><span class="t">Resultados</span><span class="small muted">5 oct 2026</span></header>
+    <main class="content"><div style="display:flex;flex-direction:column;gap:8px"><h1 class="h1">Tu nivel global es B1</h1>
+      <p class="muted">Tu meta es <b style="color:var(--ink)">B2</b>. Lo que más te frena es la <b style="color:var(--ink)">gramática</b>; tu punto fuerte, la <b style="color:var(--ink)">lectura</b>.</p></div>
+    <section class="panel"><div class="row" style="align-items:flex-end;gap:12px"><div style="display:flex;flex-direction:column"><span class="small muted">Global</span>${LB('B1')}</div><span class="mono muted" style="font-size:20px">→</span><div style="display:flex;flex-direction:column"><span class="small muted">Objetivo</span>${LB('B2')}</div></div>${ladder()}</section>
+    <section class="panel"><h2 class="h2">Tu texto escrito (IA)</h2>
+      <div class="metrics" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="metric"><b>118</b><span>palabras</span></div><div class="metric"><b>13,1</b><span>palabras/frase</span></div><div class="metric"><b>B1</b><span>nivel IA</span></div></div>
+      <p class="small">Prueba conectores como <i lang="en">nevertheless</i> o <i lang="en">furthermore</i> y alguna oración condicional.</p></section>
+    <button class="btn primary" data-go="plan">Crear mi plan</button></main>`);
+
+  V.plan = () => {
+    const fecha = S.planMode === 'fecha';
+    return phone(`<header class="bar"><span class="t">Mi plan</span><span class="small muted">B1 → B2</span></header>
+    <main class="content"><div style="display:flex;flex-direction:column;gap:6px">
+      <h1 class="h1">${fecha ? 'De B1 a B2 antes del 15 jun 2027' : 'De B1 a B2 en unas 58 semanas'}</h1>
+      <p class="small muted">~217 h de práctica · grupo B1 de [ACADEMIA]</p></div>
+    <section class="panel"><span class="small" style="font-weight:700">Calcular el plan a partir de</span>
+      <div class="toggle" role="group" aria-label="Modo de cálculo">
+        <button type="button" data-act="plan-mode" data-v="tiempo" aria-pressed="${!fecha}">Mi tiempo diario</button>
+        <button type="button" data-act="plan-mode" data-v="fecha" aria-pressed="${fecha}">Una fecha objetivo</button></div>
+      <div class="row" style="align-items:flex-end">
+        ${fecha ? '<label class="field" for="pd" style="flex:1 1 140px">Fecha objetivo<input id="pd" type="date" value="2027-06-15"></label>'
+                : '<label class="field" for="pm" style="flex:1 1 140px">Minutos al día<select id="pm"><option>30 min</option><option selected>45 min</option><option>60 min</option><option>90 min</option></select></label>'}
+        <label class="field" for="pdays" style="flex:1 1 120px">Días por semana<select id="pdays"><option>4 días</option><option selected>5 días</option><option>6 días</option></select></label></div>
+      <div class="fb" style="background:var(--accent-soft)">${fecha ? 'Necesitas unos <b class="mono">75 min</b> al día, 5 días por semana. Con 45 min llegarías en noviembre de 2027.' : 'Con <b class="mono">45 min</b> al día, 5 días por semana, llegarías hacia el <b>15 nov 2027</b>.'}</div></section>
+    <section class="panel"><h2 class="h2">Dónde pones el foco</h2><div class="bars">
+      ${[['Gramática', 27, fecha ? 100 : 60], ['Expresión oral', 27, fecha ? 100 : 60], ['Escucha', 20, fecha ? 75 : 45], ['Escritura', 20, fecha ? 75 : 45], ['Lectura', 7, fecha ? 25 : 15], ['Vocabulario', 7, fecha ? 25 : 15]]
+        .map(([n, w, m]) => `<div class="br"><span>${n}</span><div class="track"><span style="width:${w * 3}%"></span></div><span class="mono">${m}′/sem</span></div>`).join('')}</div>
+      <p class="small muted">Las destrezas por debajo de B2 reciben más tiempo.</p></section>
+    <section class="panel"><h2 class="h2">Semana tipo</h2><div class="week">
+      ${[['Lun', ['--gold', '--band-c', '--band-b'], 1], ['Mar', ['--gold', '--band-a', '--band-c']], ['Mié', ['--gold', '--band-b', '--ink']], ['Jue', ['--band-c', '--gold', '--band-a']], ['Vie', ['--band-c', '--band-b', '--accent']], ['Sáb', []], ['Dom', []]]
+        .map(([d, c, t]) => `<div class="day${t ? ' today' : ''}${c.length ? '' : ' rest'}"><b>${d}</b>${c.length ? c.map(x => `<span class="dot" style="background:var(${x})"></span>`).join('') : '<span>—</span>'}</div>`).join('')}</div>
+      <div class="row small muted" style="gap:4px 12px">${[['--gold', 'Gramática'], ['--band-c', 'Oral'], ['--band-b', 'Escucha'], ['--band-a', 'Escritura'], ['--ink', 'Lectura'], ['--accent', 'Vocabulario']].map(([c, n]) => `<span><span class="dot" style="background:var(${c})"></span> ${n}</span>`).join('')}</div></section>
+    <section class="panel" style="gap:0"><h2 class="h2" style="margin-bottom:8px">Fases e hitos</h2>
+      ${(fecha ? [['Sem. 1–12', '<b>Base.</b> Rutina diaria y refuerzo de gramática.'], ['Sem. 4', 'Repite el diagnóstico (cada 4 semanas).'], ['Sem. 13–24', '<b>Consolidación.</b> Materiales B2 aunque cueste.'], ['Sem. 18', 'Examen de práctica B2 First (FCE).'], ['Sem. 25–36', '<b>Transferencia.</b> Conversación y simulacros.'], ['Sem. 36', 'Meta B2: diagnóstico completo.']]
+        : [['Sem. 1–19', '<b>Base.</b> Rutina diaria y refuerzo de gramática.'], ['Sem. 4', 'Repite el diagnóstico (cada 4 semanas).'], ['Sem. 20–39', '<b>Consolidación.</b> Materiales B2 aunque cueste.'], ['Sem. 29', 'Examen de práctica B2 First (FCE).'], ['Sem. 40–58', '<b>Transferencia.</b> Conversación y simulacros.'], ['Sem. 58', 'Meta B2: diagnóstico completo.']])
+        .map(([w, t]) => `<div class="tl"><span class="mono">${w}</span><span>${t}</span></div>`).join('')}</section>
+    <button class="btn primary" data-act="plan-save">Guardar plan</button></main>${nav('plan')}`);
+  };
+
+  const TASKS = [['Gramática · 25 min · B1', 'Estudia una unidad de “English Grammar in Use” y haz sus ejercicios.', 'practica'], ['Expresión oral · 25 min · B1', 'Habla 2 minutos sobre una consigna con temporizador.', 'oral'], ['Escucha · 25 min · B2', 'Episodio de “6 Minute English” (BBC), sin y con transcripción.', 'practica']];
+  V.hoy = () => {
+    const done = S.tasks.filter(Boolean).length;
+    return phone(`<header class="bar"><span class="brand">${LOGO}English Compass</span><button class="btn link small" data-go="login">Salir</button></header>
+    <main class="content">
+      <section class="row between"><div class="row" style="align-items:flex-end;gap:10px"><div style="display:flex;flex-direction:column"><span class="small muted">Nivel</span>${LB('B1')}</div><span class="mono muted" style="font-size:20px">→</span><div style="display:flex;flex-direction:column"><span class="small muted">Meta</span>${LB('B2')}</div></div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end"><b class="mono" style="font-size:22px">12</b><span class="small muted">días seguidos</span></div></section>
+      <section class="panel" style="gap:4px"><div class="row between"><h2 class="h2" style="font-size:22px">Hoy · Lunes</h2><span class="small muted">${done}/3 tareas</span></div>
+        ${TASKS.map(([tag, txt, to], i) => `<div class="task${S.tasks[i] ? ' done' : ''}"><input type="checkbox" id="tk${i}" data-act="task" data-i="${i}" ${S.tasks[i] ? 'checked' : ''}>
+          <div class="tb"><span class="tag">${tag}</span><label for="tk${i}">${txt}</label>${S.tasks[i] ? '' : `<button class="btn sm" style="align-self:flex-start" data-go="${to}">Practicar</button>`}</div></div>`).join('')}</section>
+      <section class="panel class-task" style="gap:8px"><span class="tag">Tarea de clase · entrega el jueves</span>
+        <p><b>[PROFESOR]:</b> Grabad 2 minutos sobre «working from home». La IA os dará una primera nota y yo la reviso antes del jueves.</p>
+        <button class="btn sm" style="align-self:flex-start" data-go="oral">${S.rec === 'done' ? 'Ver mi evaluación' : 'Grabar respuesta'}</button></section>
+      <section style="display:flex;flex-direction:column;gap:6px"><div class="row between small"><span>Minutos esta semana</span><span class="mono">${25 * done} / 375</span></div>
+        <div class="progress" style="height:8px"><span style="width:${Math.round(25 * done / 375 * 100)}%"></span></div></section>
+    </main>${nav('hoy')}`);
+  };
+
+  const QUIZ = [
+    { q: 'I ___ in Madrid since 2019.', o: ['live', 'am living', 'have lived', 'lived'], a: 2, e: '“Since” + un momento del pasado que llega hasta hoy pide present perfect.' },
+    { q: 'If it rains tomorrow, we ___ at home.', o: ['stay', 'will stay', 'would stay', 'stayed'], a: 1, e: 'Primer condicional: if + presente, will + infinitivo.' },
+    { q: 'The letter ___ yesterday.', o: ['was sent', 'sent', 'has sent', 'is sending'], a: 0, e: 'La carta recibe la acción: pasiva en pasado, was + participio.' }
+  ];
+  V.practica = () => {
+    const done = S.quiz >= QUIZ.length;
+    const q = QUIZ[Math.min(S.quiz, QUIZ.length - 1)], a = S.quizAns;
+    return phone(`<header class="bar"><span class="t">Práctica</span><span class="small muted">Recomendado: B1</span></header>
+    <main class="content" style="gap:14px">
+      <div class="chips" role="group" aria-label="Destreza">${['Lectura', 'Escucha', 'Gramática', 'Vocabulario', 'Escritura'].map(n => `<button type="button" class="chip" aria-pressed="${n === 'Gramática'}" ${n === 'Gramática' ? '' : 'data-toast="En el prototipo solo está activa Gramática y Oral con IA."'}>${n}</button>`).join('')}<button type="button" class="chip" data-go="oral">Oral con IA</button></div>
+      <div class="row small"><span class="muted">Nivel</span><div class="chips">${['A2', 'B1', 'B2'].map(l => `<button type="button" class="chip" aria-pressed="${l === 'B1'}">${l}</button>`).join('')}</div></div>
+      <section class="panel">${done ? `<h2 class="h2">Sesión guardada</h2><p>Has acertado <b class="mono">${S.quizOk}/${QUIZ.length}</b>. La tarea de gramática de hoy se ha marcado como hecha.</p>
+        <div class="row"><button class="btn primary" data-act="quiz-restart">Otra sesión</button><button class="btn" data-go="hoy">Volver a hoy</button></div>`
+      : `<div class="row between small muted"><span>Pregunta ${S.quiz + 1} de ${QUIZ.length}</span><span class="mono">${S.quizOk} aciertos</span></div>
+        <div class="progress"><span style="width:${S.quiz / QUIZ.length * 100}%"></span></div>
+        <p lang="en" style="font-weight:700;font-size:18px">${q.q}</p>
+        <div lang="en" style="display:flex;flex-direction:column;gap:8px">${q.o.map((o, i) => `<button type="button" class="opt${a !== null ? (i === q.a ? ' ok' : i === a ? ' ko' : '') : ''}" data-act="quiz" data-v="${i}" ${a !== null ? 'disabled' : ''}>${o}</button>`).join('')}</div>
+        ${a !== null ? `<div class="fb ${a === q.a ? 'ok' : 'ko'}"><b>${a === q.a ? 'Correcto.' : 'Respuesta correcta: ' + q.o[q.a] + '.'}</b> ${q.e}</div><button class="btn primary" data-act="quiz-next">${S.quiz + 1 < QUIZ.length ? 'Siguiente' : 'Terminar'}</button>` : ''}`}</section>
+    </main>${nav('practica')}`);
+  };
+
+  const CRIT = [['Fluidez', 'B1', 2], ['Pronunciación', 'B1', 2], ['Gramática', 'A2', 1], ['Vocabulario', 'B2', 3], ['Coherencia', 'B1', 2]];
+  V.oral = () => {
+    const prompt = `<section class="panel"><span class="tag">Tarea de clase · 2 minutos</span>
+      <p lang="en" style="font-weight:700">Do you think people should work from home? Give advantages, disadvantages and your opinion.</p>`;
+    let body;
+    if (S.rec === 'idle' || S.rec === 'recording') {
+      const on = S.rec === 'recording';
+      body = `${prompt}<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px 0">
+        <span class="timer">${Math.floor(S.recSecs / 60)}:${String(S.recSecs % 60).padStart(2, '0')}</span>
+        <button class="rec${on ? ' on' : ''}" data-act="rec" aria-label="${on ? 'Parar la grabación' : 'Empezar a grabar'}">${on ? 'Parar' : 'Grabar'}</button>
+        <span class="small muted">${on ? 'Grabando… pulsa Parar cuando termines.' : 'Piensa 30 segundos y pulsa Grabar.'}</span></div></section>`;
+    } else if (S.rec === 'analyzing') {
+      body = `${prompt}<div class="fb wait">Transcribiendo y evaluando tu respuesta con IA…</div></section>`;
+    } else {
+      body = `${prompt}<div class="audio"><button class="play" aria-label="Reproducir mi grabación" data-toast="Reproduciendo tu grabación (simulado).">${PLAY}</button>
+        <div style="flex:1;display:flex;flex-direction:column;gap:4px"><div class="progress" style="height:4px"><span style="width:0%"></span></div><span class="mono small muted">Mi grabación · 1:42</span></div>
+        <button class="btn sm" data-act="rec-again">Repetir</button></div></section>
+      <section class="panel"><div class="row between"><h2 class="h2">Evaluación de la IA</h2>${L('B1')}</div>
+        ${CRIT.map(([n, c, lv]) => `<div class="lr" style="grid-template-columns:110px 1fr 40px"><span>${n}</span><div class="segs">${[0, 1, 2, 3, 4, 5].map(i => `<span class="${i <= lv ? (i < 2 ? 'a' : 'b') : ''}"></span>`).join('')}</div>${L(c)}</div>`).join('')}
+        <p class="small muted">Criterios basados en las escalas orales del MCER.</p></section>
+      <section class="panel"><h2 class="h2" style="font-size:17px">Lo que dijiste, corregido</h2>
+        <p lang="en" style="font-size:14px;line-height:1.7">I think working from home <span class="fix">have</span> <span class="okw">has</span> many advantages. For example, you <span class="fix">don't lose</span> <span class="okw">don't waste</span> time in traffic. However, <span class="fix">is difficult</span> <span class="okw">it is difficult</span> to stop working in the evening…</p>
+        <ul style="margin:0;padding-left:18px;font-size:14px;display:flex;flex-direction:column;gap:4px"><li>Repasa la concordancia: <i lang="en">working … has</i>.</li><li>No omitas el sujeto: <i lang="en">it is difficult</i>.</li><li>Buen uso de <i lang="en">however</i>. Prueba <i lang="en">on the other hand</i>.</li></ul></section>
+      ${S.pending < 4 ? '<div class="fb ok"><b>Revisada por tu profesor.</b> Nota final B1. «Muy buena estructura; los errores de concordancia son despistes.»</div>' : '<div class="fb wait"><b>Pendiente de revisión.</b> Tu profesor validará o ajustará esta nota antes del jueves.</div>'}`;
+    }
+    return phone(`<header class="bar"><button class="btn link" data-go="hoy">Volver</button><span class="t">Expresión oral</span><span class="small muted">B1</span></header>
+      <main class="content">${body}</main>${nav('practica')}`);
+  };
+
+  V.progreso = () => phone(`<header class="bar"><span class="t">Progreso</span><span class="small muted">Semana 5 de 36</span></header>
+    <main class="content"><div class="metrics" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+      <div class="metric"><b>12</b><span>días seguidos</span></div><div class="metric"><b>300</b><span>min esta semana de 375</span></div>
+      <div class="metric"><b>71 %</b><span>aciertos totales</span></div><div class="metric"><b>16,5</b><span>horas de ~217</span></div></div>
+    <section class="panel"><h2 class="h2">Aciertos por destreza</h2><div class="bars">
+      ${[['Lectura', 83, '--good'], ['Escucha', 74, '--good'], ['Gramática', 58, '--gold'], ['Vocabulario', 70, '--good']].map(([n, v, c]) => `<div class="br" style="grid-template-columns:100px 1fr 44px"><span>${n}</span><div class="track"><span style="width:${v}%;background:var(${c})"></span></div><span class="mono">${v} %</span></div>`).join('')}</div>
+      <p class="small muted">Verde: 70 % o más, lista para practicar en el nivel siguiente.</p></section>
+    <section class="panel"><h2 class="h2">Diagnósticos</h2><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Global</th><th>Gram.</th><th>Oral</th></tr></thead>
+      <tbody><tr><td>2 nov 2026</td><td>${L('B1')}</td><td>${L('B1')}</td><td>${L('A2')}</td></tr><tr><td>5 oct 2026</td><td>${L('B1')}</td><td>${L('A2')}</td><td>${L('A2')}</td></tr></tbody></table></div>
+      <p class="small">La gramática ha subido de A2 a B1 en 4 semanas.</p></section>
+    </main>${nav('progreso')}`);
+
+  /* ---------- Profesor ---------- */
+  const dhead = (tab) => `<header class="dhead"><div class="dhead-in"><span class="brand">${LOGO}English Compass <span class="small muted" style="font-family:var(--font-body);font-weight:400">· Profesorado · [NOMBRE DE LA ACADEMIA]</span></span>
+    <nav class="dnav" aria-label="Secciones del profesor">${[['profesor', 'grupos', 'Mis grupos'], ['revision', 'revisiones', `Revisiones (${S.pending})`], ['tarea', 'tareas', 'Tareas y biblioteca']].map(([to, k, l]) => `<button type="button" data-go="${to}" ${k === tab ? 'aria-current="page"' : ''}>${l}</button>`).join('')}
+    <button type="button" data-go="login">Salir</button></nav></div></header>`;
+  const STUDENTS = [['Lucía M.', 'B1', 'Gramática', 'A2', 80, '300/375', 'Hoy', 'ok', 'Al día'], ['Javier R.', 'B1', 'Expresión oral', 'A2', 32, '120/375', 'Hace 3 días', 'warn', 'Se retrasa'], ['Marta G.', 'B2', 'Escritura', 'B1', 100, '410/375', 'Ayer', 'up', 'Lista para B2'], ['Pablo S.', 'A2', 'Escucha', 'A2', 0, '0/375', 'Hace 9 días', 'bad', 'Sin actividad'], ['Ana T.', 'B1', 'Vocabulario', 'B1', 68, '255/375', 'Hoy', 'ok', 'Al día']];
+  const REVIEWS = [['Lucía M.', 'Oral', 'B1', 'working from home'], ['Ana T.', 'Oral', 'B1', 'working from home'], ['Marta G.', 'Escritura', 'B2', 'email de queja'], ['Javier R.', 'Escritura', 'A2', 'email de queja']];
+  V.profesor = () => `<div class="desk">${dhead('grupos')}<main class="dmain">
+    <div class="row between" style="align-items:flex-end"><div style="display:flex;flex-direction:column;gap:4px"><span class="eyebrow">Grupo</span><h1 class="h1" style="font-size:30px">B1 · martes y jueves 18:00</h1></div>
+      <div class="row"><button class="btn" data-toast="Código de invitación copiado: B1-MJ-7K4Q">Invitar alumnos</button><button class="btn primary" data-go="tarea">Asignar tarea</button></div></div>
+    <div class="metrics"><div class="metric"><b>12</b><span>alumnos en el grupo</span></div><div class="metric"><b>9</b><span>al día con su plan esta semana</span></div><div class="metric"><b>B1</b><span>nivel medio · objetivo B2 en junio</span></div><div class="metric"><b>${S.pending}</b><span>evaluaciones de IA por revisar</span></div></div>
+    <div class="cols"><section class="panel wide"><h2 class="h2">Alumnos</h2><div class="table-wrap"><table>
+      <thead><tr><th>Alumno</th><th>Global</th><th>Más débil</th><th>Minutos semana</th><th>Última actividad</th><th>Estado</th></tr></thead>
+      <tbody>${STUDENTS.map(s => `<tr><td><b>${s[0]}</b></td><td>${L(s[1])}</td><td>${s[2]} ${L(s[3])}</td><td><span class="mini"><span style="width:${s[4]}%;background:var(${s[7] === 'warn' ? '--gold' : s[7] === 'bad' ? '--bad' : '--accent'})"></span></span><span class="mono">${s[5]}</span></td><td>${s[6]}</td><td><span class="pill ${s[7]}">${s[8]}</span></td></tr>`).join('')}</tbody></table></div>
+      <span class="small muted">Mostrando 5 de 12 alumnos.</span></section>
+    <aside class="panel narrow" style="gap:0"><h2 class="h2" style="margin-bottom:8px">Por revisar</h2>
+      ${S.pending ? REVIEWS.slice(4 - S.pending).map((r, i) => `<div class="rv"><div style="display:flex;flex-direction:column"><b>${r[0]} · ${r[1]}</b><span class="small muted">IA: ${r[2]} · ${r[3]}</span></div><button class="btn sm" data-act="open-review" data-i="${4 - S.pending + i}">Revisar</button></div>`).join('') : '<p class="muted">No hay evaluaciones pendientes.</p>'}
+      <p class="small muted" style="margin-top:12px">Destreza más débil del grupo: <b style="color:var(--ink)">gramática</b> (7 de 12 alumnos).</p></aside></div>
+  </main></div>`;
+
+  V.revision = () => {
+    if (!S.pending) return `<div class="desk">${dhead('revisiones')}<main class="dmain"><h1 class="h1">No hay revisiones pendientes</h1><button class="btn" style="align-self:flex-start" data-go="profesor">Volver al grupo</button></main></div>`;
+    const r = REVIEWS[4 - S.pending];
+    const opts = ['A2', 'B1', 'B2', 'C1'];
+    return `<div class="desk">${dhead('revisiones')}<main class="dmain">
+    <div style="display:flex;flex-direction:column;gap:4px"><span class="eyebrow">${r[0]} · Grupo B1 · ${r[1] === 'Oral' ? 'Expresión oral' : 'Escritura'} · revisión ${5 - S.pending} de 4</span><h1 class="h1" style="font-size:30px">${r[3][0].toUpperCase() + r[3].slice(1)}</h1></div>
+    <div class="cols"><section class="panel wide">
+      ${r[1] === 'Oral' ? `<div class="audio"><button class="play" aria-label="Reproducir la grabación" data-act="listen">${PLAY}</button><span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="mono small" style="margin-left:auto">1:42</span></div>` : ''}
+      <h2 class="h2" style="font-size:18px">${r[1] === 'Oral' ? 'Transcripción' : 'Texto'} con correcciones de la IA</h2>
+      <p lang="en" style="line-height:1.8">I think working from home <span class="fix">have</span> <span class="okw">has</span> many advantages. For example, you <span class="fix">don't lose</span> <span class="okw">don't waste</span> time in traffic and you can organise your day. However, <span class="fix">is difficult</span> <span class="okw">it is difficult</span> to stop working in the evening, and some people feel lonely. In my opinion, the best option is a mix of both…</p></section>
+    <section class="panel narrow" style="flex-basis:420px;gap:4px"><h2 class="h2" style="font-size:18px;margin-bottom:6px">Nota por criterio</h2>
+      <div class="crit eyebrow" style="border-top:0"><span>Criterio</span><span>IA</span><span>Tu nota</span></div>
+      ${CRIT.map(([n, c], i) => `<div class="crit"><span>${n}</span><span class="mono muted" style="font-weight:700">${c}</span><span class="row"><select aria-label="Tu nota de ${n.toLowerCase()}" data-act="grade" data-i="${i}" class="${S.changed[i] ? 'changed' : ''}">${opts.map(o => `<option${(S.changed[i] || c) === o ? ' selected' : ''}>${o}</option>`).join('')}</select>${S.changed[i] ? '<span class="small" style="color:var(--gold-ink);font-weight:700">Ajustada</span>' : ''}</span></div>`).join('')}
+      <label class="field" for="cm" style="margin-top:8px">Comentario para el alumno<textarea id="cm">Muy buena estructura. Los errores de concordancia son despistes: en clase lo has hecho bien.</textarea></label>
+      <div class="row" style="margin-top:8px"><button class="btn primary" data-act="validate">Validar y enviar</button><button class="btn" data-act="redo">Pedir que repita</button></div></section></div>
+  </main></div>`;
+  };
+
+  V.tarea = () => {
+    const crear = S.taskMode === 'crear';
+    const qb = (n) => `<div class="qblock"><div class="row between"><b>Pregunta ${n}</b><span class="small muted">Opción múltiple</span></div>
+      <label class="field" for="qe${n}">Enunciado<input id="qe${n}" type="text" lang="en" value="${n === 1 ? "I ___ my keys. I can't open the door." : ''}" placeholder="Escribe el enunciado"></label>
+      <div class="optgrid" lang="en">${(n === 1 ? ['have lost', 'lost', 'am losing', 'had lost'] : ['', '', '', '']).map((o, i) => `<label><input type="radio" name="ok${n}" ${i === 0 ? 'checked' : ''} aria-label="Marcar como correcta"><input type="text" value="${o}" placeholder="Opción ${i + 1}" aria-label="Opción ${i + 1}"></label>`).join('')}</div>
+      <label class="field" for="qx${n}">Explicación (se muestra al fallar)<input id="qx${n}" type="text" value="${n === 1 ? 'El resultado es presente: no puede abrir la puerta ahora.' : ''}"></label></div>`;
+    const LIB = [['Working from home', 'Lectura · 3 preguntas'], ['Station announcement', 'Escucha · 3 preguntas'], ['Email de queja a un hotel', 'Escritura · corrige la IA'], ['Working from home (oral)', 'Oral · evalúa la IA'], ['Condicionales 1 y 2', 'Gramática · creado por [PROFESOR]']];
+    return `<div class="desk">${dhead('tareas')}<main class="dmain">
+    <div class="row between" style="align-items:flex-end"><h1 class="h1" style="font-size:30px">Asignar tarea al grupo B1</h1>
+      <div class="toggle" role="group" aria-label="Origen de la tarea" style="min-width:300px">
+        <button type="button" data-act="task-mode" data-v="biblioteca" aria-pressed="${!crear}">De la biblioteca</button>
+        <button type="button" data-act="task-mode" data-v="crear" aria-pressed="${crear}">Crear la mía</button></div></div>
+    ${crear ? `<section class="panel"><div class="row" style="align-items:flex-end">
+        <label class="field" for="tt" style="flex:2 1 220px">Título<input id="tt" type="text" value="Present perfect vs past simple"></label>
+        <label class="field" for="ts" style="flex:1 1 150px">Destreza<select id="ts"><option>Gramática</option><option>Vocabulario</option><option>Lectura</option><option>Escucha</option><option>Escritura</option><option>Expresión oral</option></select></label>
+        <label class="field" for="tn" style="flex:1 1 100px">Nivel<select id="tn"><option>A2</option><option selected>B1</option><option>B2</option></select></label>
+        <label class="field" for="tf" style="flex:1 1 150px">Entrega<input id="tf" type="date" value="2026-10-08"></label></div>
+      <label class="field" for="ti">Instrucciones para los alumnos<textarea id="ti">Elige la opción correcta. Fíjate en si la acción sigue hasta hoy.</textarea></label>
+      ${Array.from({ length: S.questions }, (_, i) => qb(i + 1)).join('')}
+      <div class="row"><button class="btn dash" data-act="add-q">+ Opción múltiple</button><button class="btn dash" data-toast="Añadiría un texto o audio con sus preguntas.">+ Texto o audio con preguntas</button><button class="btn dash" data-toast="Añadiría una redacción que corrige la IA.">+ Redacción (corrige la IA)</button><button class="btn dash" data-toast="Añadiría una grabación que evalúa la IA.">+ Grabación oral (evalúa la IA)</button></div>
+      <div class="row" style="justify-content:flex-end;padding-top:12px;border-top:1px solid var(--line)"><button class="btn" data-toast="Guardada en la biblioteca de la academia.">Guardar en la biblioteca</button><button class="btn primary" data-act="assign">Asignar a 12 alumnos</button></div></section>`
+    : `<section class="panel" style="gap:0">${LIB.map(([t, d]) => `<div class="lib"><div style="display:flex;flex-direction:column"><b>${t}</b><span class="small muted">${d}</span></div><div class="row">${L('B1')}<button class="btn sm" data-act="assign">Asignar</button></div></div>`).join('')}</section>`}
+  </main></div>`;
+  };
+
+  /* ---------- Render y eventos ---------- */
+  function render() {
+    const sc = SCREENS[S.screen];
+    document.querySelectorAll('[data-role]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.role === sc.role)));
+    jump.value = S.screen;
+    stage.innerHTML = V[S.screen]();
+  }
+
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-go],[data-act],[data-toast],[data-role]');
+    if (!el) return;
+    if (el.dataset.role) { go(el.dataset.role === 'teacher' ? 'profesor' : (S.screen === 'login' ? 'login' : 'hoy')); return; }
+    if (el.dataset.go) { if (el.dataset.go === 'practica' && S.quiz >= QUIZ.length) { S.quiz = 0; S.quizAns = null; S.quizOk = 0; } go(el.dataset.go); return; }
+    if (el.dataset.toast && !el.dataset.act) { toast(el.dataset.toast); return; }
+    const a = el.dataset.act, v = el.dataset.v;
+    if (a === 'login-role') { S.loginRole = v; render(); }
+    else if (a === 'listen') { const w = el.parentElement.querySelector('.wave'); if (w) { w.classList.add('on'); setTimeout(() => w.classList.remove('on'), 3000); } }
+    else if (a === 'diag-pick') { S.diagQ = Number(v); render(); }
+    else if (a === 'diag-next') { if (S.diagStep < 2) { S.diagStep++; S.diagQ = null; render(); } else { S.diagStep = 0; S.diagQ = null; go('resultados'); } }
+    else if (a === 'plan-mode') { S.planMode = v; render(); }
+    else if (a === 'plan-save') { toast('Plan guardado. Tu profesor lo verá en el panel del grupo.'); setTimeout(() => go('hoy'), 700); }
+    else if (a === 'task') { S.tasks[Number(el.dataset.i)] = el.checked; render(); }
+    else if (a === 'quiz') { S.quizAns = Number(v); if (S.quizAns === QUIZ[S.quiz].a) S.quizOk++; render(); }
+    else if (a === 'quiz-next') { S.quiz++; S.quizAns = null; if (S.quiz >= QUIZ.length) S.tasks[0] = true; render(); }
+    else if (a === 'quiz-restart') { S.quiz = 0; S.quizAns = null; S.quizOk = 0; render(); }
+    else if (a === 'rec') {
+      if (S.rec === 'idle') {
+        S.rec = 'recording'; S.recSecs = 0; render();
+        recTimer = setInterval(() => { S.recSecs++; const t = stage.querySelector('.timer'); if (t) t.textContent = `${Math.floor(S.recSecs / 60)}:${String(S.recSecs % 60).padStart(2, '0')}`; if (S.recSecs >= 120) stopRec(); }, 1000);
+      } else stopRec();
+    }
+    else if (a === 'rec-again') { S.rec = 'idle'; S.recSecs = 0; render(); }
+    else if (a === 'open-review') { S.changed = {}; go('revision'); }
+    else if (a === 'validate') { S.pending--; S.changed = {}; S.tasks[1] = true; toast('Nota validada y enviada al alumno.'); go(S.pending ? 'revision' : 'profesor'); }
+    else if (a === 'redo') { S.pending--; S.changed = {}; toast('Se ha pedido al alumno que repita la tarea.'); go(S.pending ? 'revision' : 'profesor'); }
+    else if (a === 'task-mode') { S.taskMode = v; render(); }
+    else if (a === 'add-q') { S.questions++; render(); }
+    else if (a === 'assign') { toast('Tarea asignada a los 12 alumnos del grupo B1.'); setTimeout(() => go('profesor'), 700); }
+  });
+  function stopRec() {
+    clearInterval(recTimer); S.rec = 'analyzing'; render();
+    setTimeout(() => { if (S.rec === 'analyzing') { S.rec = 'done'; S.tasks[1] = true; render(); } }, 1600);
+  }
+  document.addEventListener('change', (e) => {
+    const el = e.target;
+    if (el.id === 'jump') { go(el.value); return; }
+    if (el.dataset.act === 'grade') { const i = Number(el.dataset.i); S.changed[i] = el.value !== CRIT[i][1] ? el.value : undefined; render(); }
+  });
+  document.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const f = e.target.dataset.form;
+    if (f === 'login') go(S.loginRole === 'teacher' ? 'profesor' : 'hoy');
+    if (f === 'activar') go('bienvenida');
+  });
+  document.getElementById('reset').addEventListener('click', () => { clearInterval(recTimer); S = initial(); render(); });
+  render();
+})();
+</script>
+</body>
+</html>
