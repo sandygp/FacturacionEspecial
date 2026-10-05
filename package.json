@@ -1,0 +1,30 @@
+{
+  "name": "english-compass",
+  "version": "1.0.0",
+  "description": "English Compass: diagnóstico MCER, plan de estudio y práctica con IA para academias de inglés.",
+  "scripts": {
+    "build": "esbuild src/main.js --bundle --format=esm --minify --sourcemap --target=es2020 --outfile=public/js/app.js",
+    "watch": "esbuild src/main.js --bundle --format=esm --sourcemap --outfile=public/js/app.js --watch --servedir=public",
+    "test": "node --test tests/*.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sandygp/FacturacionEspecial.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sandygp/FacturacionEspecial/issues"
+  },
+  "homepage": "https://github.com/sandygp/FacturacionEspecial#readme",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@netlify/blobs": "^11.1.3",
+    "firebase": "^12.19.0",
+    "jose": "^6.2.12",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  },
+  "type": "module",
+  "private": true
+}

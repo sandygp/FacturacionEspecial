@@ -4,7 +4,7 @@
  * En gramática y vocabulario, los 3 primeros ítems de cada nivel se usan en el diagnóstico;
  * todos se usan en la práctica.
  */
-window.EC_DATA = {
+export const D = {
   // Horas de aprendizaje guiado aproximadas para pasar de un nivel al siguiente
   // (referencia orientativa de Cambridge English). Índice = nivel de partida.
   hours: [100, 180, 200, 200, 350],

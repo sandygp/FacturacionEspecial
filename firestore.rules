@@ -1,0 +1,78 @@
+rules_version = '2';
+
+// English Compass — reglas de seguridad de Firestore.
+// Alumnos: solo ven y escriben sus propios datos. Profesores: ven a los alumnos de sus grupos.
+// El código para registrar profesores vive en settings/academy (nadie puede leerlo desde la app).
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signedIn() { return request.auth != null; }
+    function userDoc(uid) { return get(/databases/$(db)/documents/users/$(uid)).data; }
+    function me() { return userDoc(request.auth.uid); }
+    function isTeacher() {
+      return signedIn() && exists(/databases/$(db)/documents/users/$(request.auth.uid)) && me().role == 'teacher';
+    }
+
+    match /settings/{doc} {
+      allow read, write: if false;
+    }
+
+    match /users/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || resource.data.get('teacherId', '') == request.auth.uid);
+      allow list: if isTeacher() && resource.data.get('teacherId', '') == request.auth.uid;
+
+      allow create: if signedIn() && request.auth.uid == uid && (
+        (request.resource.data.role == 'student'
+          && get(/databases/$(db)/documents/inviteCodes/$(request.resource.data.inviteCode)).data.groupId == request.resource.data.groupId
+          && get(/databases/$(db)/documents/inviteCodes/$(request.resource.data.inviteCode)).data.teacherId == request.resource.data.teacherId)
+        || (request.resource.data.role == 'teacher'
+          && request.resource.data.signupCode == get(/databases/$(db)/documents/settings/academy).data.teacherCode)
+      );
+
+      // El usuario actualiza sus datos (diagnóstico, plan, tareas hechas) pero no su rol ni su grupo.
+      allow update: if signedIn() && request.auth.uid == uid
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'groupId', 'teacherId', 'inviteCode', 'signupCode']);
+
+      match /{sub}/{id} {
+        allow read: if signedIn() && (request.auth.uid == uid || userDoc(uid).get('teacherId', '') == request.auth.uid);
+        allow create: if signedIn() && request.auth.uid == uid && sub in ['sessions', 'diagnoses'];
+      }
+    }
+
+    match /groups/{gid} {
+      allow get: if signedIn() && (resource.data.teacherId == request.auth.uid || me().get('groupId', '') == gid);
+      allow list: if isTeacher() && resource.data.teacherId == request.auth.uid;
+      allow create: if isTeacher() && request.resource.data.teacherId == request.auth.uid;
+      allow update: if isTeacher() && resource.data.teacherId == request.auth.uid && request.resource.data.teacherId == request.auth.uid;
+    }
+
+    match /inviteCodes/{code} {
+      allow get: if signedIn();
+      allow create: if isTeacher() && request.resource.data.teacherId == request.auth.uid
+        && getAfter(/databases/$(db)/documents/groups/$(request.resource.data.groupId)).data.teacherId == request.auth.uid;
+    }
+
+    match /assignments/{aid} {
+      allow get, list: if signedIn() && (resource.data.teacherId == request.auth.uid || resource.data.groupId == me().get('groupId', ''));
+      allow create: if isTeacher() && request.resource.data.teacherId == request.auth.uid
+        && get(/databases/$(db)/documents/groups/$(request.resource.data.groupId)).data.teacherId == request.auth.uid;
+      allow delete: if isTeacher() && resource.data.teacherId == request.auth.uid;
+    }
+
+    // Biblioteca compartida por los profesores de la academia.
+    match /library/{lid} {
+      allow read: if isTeacher();
+      allow create: if isTeacher() && request.resource.data.authorId == request.auth.uid;
+      allow delete: if isTeacher() && resource.data.authorId == request.auth.uid;
+    }
+
+    match /submissions/{sid} {
+      allow get, list: if signedIn() && (resource.data.studentId == request.auth.uid || resource.data.teacherId == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.teacherId == me().get('teacherId', '')
+        && request.resource.data.status == 'pending';
+      // Solo el profesor revisa, y solo puede tocar la revisión.
+      allow update: if signedIn() && resource.data.teacherId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'review', 'reviewedAt']);
+    }
+  }
+}

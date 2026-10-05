@@ -1,67 +1,59 @@
 # English Compass
 
-Aplicación web para mejorar el inglés en las seis destrezas del Marco Común Europeo de Referencia (MCER, niveles A1–C2): diagnostica tu nivel actual, genera un plan para llegar al siguiente nivel y te permite practicar y medir tu progreso.
+Aplicación web para academias de inglés. Los alumnos diagnostican su nivel en las seis destrezas del Marco Común Europeo (A1–C2), siguen un plan para llegar al siguiente nivel y practican con corrección por IA. Los profesores gestionan sus grupos, asignan tareas y validan las notas de la IA.
 
-## Qué hace
+## Qué incluye
 
-**1. Diagnóstico adaptativo (≈ 20 min)**
-- **Lectura** y **comprensión auditiva**: un texto o audio por nivel con 3 preguntas. El audio se reproduce con la voz sintética del navegador (máximo 2 escuchas).
-- **Gramática** y **vocabulario**: bloques de 3 preguntas por nivel.
-- La prueba empieza en B1; si aciertas 2 de 3 sube de nivel, si no, baja. El nivel final es el más alto superado.
-- **Escritura**: un texto de 80–150 palabras analizado automáticamente (longitud de frase, riqueza léxica con el índice de Guiraud, conectores, estructuras como relativas, condicionales, pasiva o inversión) combinado con descriptores «puedo…» del MCER.
-- **Expresión oral**: autoevaluación con descriptores del MCER.
-- Resultado: nivel por destreza, nivel global y nivel objetivo.
+**Alumno**
+- Alta con el código de invitación de su grupo; entrada con correo y contraseña.
+- Diagnóstico adaptativo (lectura, escucha, gramática, vocabulario), escritura corregida por IA y autoevaluación oral.
+- Plan de estudio calculado por **tiempo diario** o por **fecha objetivo**, con semana tipo, fases e hitos.
+- Práctica por destreza; redacción y respuesta oral evaluadas por IA (la voz se convierte en texto en el propio navegador).
+- Tareas de clase y notas revisadas por el profesor; progreso con racha, minutos y aciertos.
 
-**2. Plan personalizado**
-- Calcula las semanas necesarias a partir de las horas de aprendizaje guiado de referencia (Cambridge English) y de tu disponibilidad (minutos al día y días por semana).
-- Da más tiempo a las destrezas por debajo del objetivo y practica cada una en su nivel + 1.
-- Semana tipo con bloques diarios, fases (base, consolidación, transferencia), hitos (re-diagnóstico, simulacros, examen Cambridge del nivel objetivo) y actividades concretas por destreza.
+**Profesor**
+- Grupos con código de invitación, tabla de alumnos con nivel, destreza débil, minutos semanales y estado.
+- Cola de revisión: nota de la IA por criterio, ajuste del profesor, comentario, validar o pedir que repita.
+- Tareas: preguntas propias, redacción u oral con IA, o lectura/escucha de la biblioteca; biblioteca compartida de la academia.
 
-**3. Práctica**
-- Gramática y vocabulario con corrección inmediata y explicación en español.
-- Lectura y escucha con velocidad ajustable y transcripción al terminar.
-- Escritura con consignas por nivel y análisis del texto.
-- Expresión oral: *shadowing* (escuchar y repetir, con reconocimiento de voz si el navegador lo permite) y charlas cronometradas con autoevaluación.
+## Arquitectura (fase gratuita)
 
-**4. Progreso**
-- Racha de días, minutos semanales frente al plan, aciertos y tiempo por destreza, historial de diagnósticos y últimas sesiones.
-- Las tareas del día se marcan solas al completar una práctica de esa destreza.
+| Pieza | Servicio |
+|---|---|
+| Web estática | Netlify (plan gratuito), carpeta `public/` |
+| Evaluación con IA | Netlify Function `netlify/functions/evaluate.mjs` → API de Claude (clave solo en el servidor) |
+| Cuentas | Firebase Authentication (correo y contraseña) |
+| Datos | Cloud Firestore, protegido por `firestore.rules` |
+| Voz a texto | Reconocimiento de voz del navegador (Chrome, Edge, Safari) |
 
-Los datos se guardan en el `localStorage` del navegador; no hay servidor ni cuentas.
+En esta fase no se guarda el audio: la IA y el profesor evalúan la transcripción, así que la pronunciación no se puntúa.
 
-## Uso
+## Puesta en marcha
 
-No necesita instalación ni compilación. Abre `index.html` en un navegador moderno o sírvelo con cualquier servidor estático:
+Sigue [docs/CONFIGURACION.md](docs/CONFIGURACION.md). Mientras `src/firebase-config.js` tenga los valores de ejemplo, la app funciona en **modo demostración** (datos en el navegador, IA simulada) con estas cuentas: `profesor@demo.com` y `lucia@demo.com`, contraseña `demo1234`.
 
-```bash
-python3 -m http.server 8000
-# abre http://localhost:8000
-```
-
-La voz sintética y el reconocimiento de voz dependen del navegador (Chrome y Edge ofrecen ambos). Sin voz sintética, la escucha muestra la transcripción.
-
-Para obtener un único archivo HTML autocontenido:
+## Desarrollo
 
 ```bash
-python3 scripts/build_single.py   # genera dist/english-compass.html
+npm install
+npm run build      # genera public/js/app.js
+npm test           # pruebas de la lógica (niveles, plan, análisis)
+npx netlify dev    # opcional: web + función de IA en local (requiere netlify-cli y variables de entorno)
 ```
 
 ## Estructura
 
 ```
-index.html            Estructura y navegación
-css/styles.css        Estilos (tema claro y oscuro)
-js/data.js            Banco de contenidos: preguntas, textos, audios, consignas, descriptores y actividades por nivel
-js/app.js             Lógica: diagnóstico, cálculo de niveles, generador de plan, práctica y progreso
-scripts/build_single.py  Empaqueta todo en un solo HTML
+public/                 Web publicada (index.html, css, mockup/)
+src/main.js             Arranque, sesión y navegación
+src/student.js          Vistas del alumno
+src/teacher.js          Vistas del profesor
+src/core.js             Lógica pura: niveles, plan, análisis de textos
+src/data.js             Banco de contenidos por nivel
+src/cloud.js            Firebase (Auth + Firestore) y llamada a la IA
+src/cloud-demo.js       Modo demostración sin Firebase
+src/firebase-config.js  Configuración pública de Firebase y nombre de la academia
+netlify/functions/      Función de evaluación con IA
+firestore.rules         Reglas de seguridad de la base de datos
+tests/                  Pruebas
 ```
-
-## Ampliar contenidos
-
-Todo el contenido está en `js/data.js`, indexado por nivel (0 = A1 … 5 = C2). Para añadir preguntas de gramática o vocabulario, agrega objetos `{ q, options, answer, explain }` al nivel correspondiente: los tres primeros de cada nivel se usan en el diagnóstico y todos en la práctica.
-
-## Limitaciones
-
-- El diagnóstico es orientativo y no sustituye a un examen oficial.
-- El análisis de escritura mide complejidad, no corrección gramatical.
-- La expresión oral se basa en autoevaluación.
